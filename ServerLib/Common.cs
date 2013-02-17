@@ -18,7 +18,8 @@ namespace ServerLib
         MotorSpeed2= 0x05,
         MotorSpeed1 = 0x06,
         MotorSpeed12 = 0x07,
-        PhotoDiode = 26,
+        LineFollowing = 0x08,
+        PhotoDiode = 17,
         Accn = 40,              //Accelerometer
         Magnet = 45             //Magnetometer
     };

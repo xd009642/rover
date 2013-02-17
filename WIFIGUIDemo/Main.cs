@@ -23,7 +23,7 @@ namespace WIFIGUIDemo
         #endregion
         Timer myTimer;
         StreamWriter writer;
-        bool first = false, exp=false;
+        bool exp = true;
         int photodiodeValue = 0, LmotorPos=0, LmotorVel=0,
             RmotorPos=0, RmotorVel=0;
         /// <summary>
@@ -34,13 +34,10 @@ namespace WIFIGUIDemo
             this.KeyPreview = true;
             InitializeComponent();
             myTimer = new Timer();
-            myTimer.Interval = 1000;
+            myTimer.Interval = 100;
             myTimer.Enabled = true;
             myTimer.Start();
-            myTimer.Tick+=new EventHandler(MyTimer_Tick);
-           // this.KeyDown += new KeyEventHandler(Main_KeyDown);
-            
-            
+            myTimer.Tick+=new EventHandler(MyTimer_Tick);             
             
         }
        
@@ -52,10 +49,9 @@ namespace WIFIGUIDemo
             if (theClient.isConnected)
             {
                 theClient.SendData(CommandID.InternalCounter, new byte[] { });
-
                 theClient.SendData(CommandID.Magnet);
                 theClient.SendData(CommandID.Accn);
-
+                theClient.SendData(CommandID.LineFollowing);
                 cmdSwitchLedStatus_Click(null, null);
                 Export();
             } 
@@ -115,6 +111,7 @@ namespace WIFIGUIDemo
             }
         }
 
+        int chartx = 0, linex=0;
         /// <summary>
         /// Data received handler - when data is pushed from the rover to this program the event handler here
         /// parses the incoming data
@@ -154,8 +151,10 @@ namespace WIFIGUIDemo
                     case (byte)CommandID.PhotoDiode:
                         this.BeginInvoke(new EventHandler(delegate
                         {
-                            photodiodeValue=(NewData[4] + (NewData[5] << 8));
-                            Photodiode.Text = (NewData[4] + (NewData[5] << 8)).ToString();
+                            photodiodeValue=(NewData[5] + (NewData[4] << 8)) - 58900;
+                            Photodiode.Text = photodiodeValue.ToString();
+                            photoChart.Series[0].Points.AddXY(chartx++, photodiodeValue);
+                            
                         }));
                         break;
                     
@@ -176,7 +175,15 @@ namespace WIFIGUIDemo
                     case (byte)CommandID.Magnet:
                         this.BeginInvoke(new EventHandler(delegate
                          {
-                             MagnetData.Text = BitConverter.ToInt16(NewData.ToArray(), 4).ToString() + "," + BitConverter.ToInt16(NewData.ToArray(), 6).ToString() + "," + BitConverter.ToInt16(NewData.ToArray(), 8).ToString();
+                             int x = (NewData[4]<< 8) + NewData[5] ;
+                             int z = (NewData[6]<< 8) + NewData[7] ;
+                             int y = (NewData[8] << 8) + NewData[9];
+                             MagnetData.Text = x.ToString() + "," + z.ToString() + "," + y.ToString();
+                             double rotate = Math.Atan2(y,x);
+                             if(rotate<0)
+                                rotate += 2*Math.PI;
+                             rotate = rotate * (180 / Math.PI);
+                             rotateBox.Text = rotate.ToString();
                          }));
                         break;
                     case (byte)CommandID.Accn:
@@ -190,13 +197,23 @@ namespace WIFIGUIDemo
                             accY = accY >> 4; accY -= 2048;
                             int accZ = (NewData[8] << 8) | (NewData[9]);
                             accZ = accZ >> 4; accZ -= 2048;
-
-
                             AccnData.Text = accX.ToString() + "," + accY.ToString() + "," + accZ.ToString();
-                            
-                            
-                            // AccnData.Text = BitConverter.ToInt16(NewData.ToArray(), 4).ToString() + "," + BitConverter.ToInt16(NewData.ToArray(), 6).ToString() + "," + BitConverter.ToInt16(NewData.ToArray(), 8).ToString();
                             writer.WriteLine(AccnData.Text);
+                        }));
+                        break;
+                    case (byte)CommandID.LineFollowing:
+
+                        this.BeginInvoke(new EventHandler(delegate
+                        {
+                            int leftSensor = (NewData[5] + (NewData[6] << 8));
+                            //int leftSensor = (NewData[5] << 8) | (NewData[6]);
+                            int rightSensor = (NewData[7] + (NewData[8] << 8));
+                            //int rightSensor = (NewData[7] << 8) | (NewData[8]);
+                            LFLeft.Text = leftSensor.ToString();
+                            LFRight.Text = rightSensor.ToString();
+                            lineChart.Series[0].Points.AddXY(linex, leftSensor);
+                            lineChart.Series[1].Points.AddXY(linex, rightSensor);
+                            linex++;
                         }));
                         break;
                     
@@ -310,29 +327,85 @@ namespace WIFIGUIDemo
             writer.Close();
         }
 
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-
-        }
-
         private void chkRedStat_CheckedChanged(object sender, EventArgs e)
         {
 
         }
+
         #region MOTION
-        private void Stop_Click(object sender, EventArgs e)
+        private void stop()
         {
             byte motion = 0x00;
             DualMotorCommand(new byte[] { motion, motion });
-
         }
-        private void forward_Click(object sender, EventArgs e)
+        private void forward()
         {
             byte LMotion = 0x7F;
             byte RMotion = 0x71;
             DualMotorCommand(new byte[] { LMotion, RMotion });
-
         }
+        private void SForward()
+        {
+            byte LMotion = 40;
+            byte RMotion = 38;
+            DualMotorCommand(new byte[] { LMotion, RMotion });
+        }
+        private void backward()
+        {
+            byte RMotion = 0x81;
+            byte LMotion = 0x8F;
+            DualMotorCommand(new byte[] { LMotion, RMotion });
+        }
+        private void SBackward()
+        {
+            byte LMotion = 0xE2;
+            byte RMotion = 0xDA;
+            DualMotorCommand(new byte[] { LMotion, RMotion });
+        }
+        private void antiClockwise()
+        {
+            byte LMotion = 0x7F;
+            byte RMotion = 0x81;
+            DualMotorCommand(new byte[] { LMotion, RMotion });
+        }
+        private void clockwise()
+        {
+            byte LMotion = 0x81;
+            byte RMotion = 0x7F;
+            DualMotorCommand(new byte[] { LMotion, RMotion });
+        }
+
+
+        private void Stop_Click(object sender, EventArgs e)
+        {
+            stop();
+        }
+        private void FowardButton_Click(object sender, EventArgs e)
+        {
+            forward();
+        } 
+        private void SlowFoward_Click(object sender, EventArgs e)
+        {
+            SForward();
+        }
+        private void AntiClockwise_Click(object sender, EventArgs e)
+        {
+            antiClockwise();
+        }
+        private void Clockwise_Click(object sender, EventArgs e)
+        {
+            clockwise();
+        }
+        private void Backward_Click(object sender, EventArgs e)
+        {
+            backward();
+        }
+        private void SlowBackward_Click(object sender, EventArgs e)
+        {
+            SBackward();
+        }
+
+
         private void DualMotorCommand(byte[] command)
         {
             if (theClient.isConnected)
@@ -341,63 +414,53 @@ namespace WIFIGUIDemo
             }
             groupBox2.Focus();
         }
-        private void AntiClockwise_Click(object sender, EventArgs e)
-        {
-            byte LMotion = 0x7F;
-            byte RMotion = 0x81;
-            DualMotorCommand(new byte[] { LMotion, RMotion });
-        }
 
-        private void Clockwise_Click(object sender, EventArgs e)
-        {
-            byte RMotion = 0x7F;
-            byte LMotion = 0x81;
-            DualMotorCommand(new byte[] { LMotion, RMotion });
-        }
-
-        private void Backward_Click(object sender, EventArgs e)
-        {
-            byte RMotion = 0x81;
-            byte LMotion = 0x8F;
-            //int y = (int)(RMotion*0.5);
-            DualMotorCommand(new byte[] { LMotion, RMotion });
-        }
         #endregion
 
         private void Main_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar.Equals(Convert.ToChar(119)))
-                forward_Click(null, null);
+                forward();
             else if (e.KeyChar.Equals(Convert.ToChar(115)))
-                Backward_Click(null, null);
+                backward();
             else if (e.KeyChar.Equals(Convert.ToChar(97)))
-                AntiClockwise_Click(null, null);
+                antiClockwise();
             else if (e.KeyChar.Equals(Convert.ToChar(100)))
-                Clockwise_Click(null, null);
-            else if (e.KeyChar.Equals(Convert.ToChar(32)))
-                Stop_Click(null, null);
-            
+                clockwise();
+            else 
+                stop();
         }
-
-      
 
         private void ExportData_Click(object sender, EventArgs e)
         {
             exp = true;
         }
+
         private void Export()
         {
   
                 //writer.Write(txtCounter.Text + "," + LmotorPos.ToString() + "," + RmotorPos.ToString() + ","                  + LmotorVel.ToString() + "," + RmotorVel.ToString() + "," +                    photodiodeValue.ToString() + "," +  MagnetData.Text+ ","  + AccnData.Text + "\r\n");
 
                 writer.Flush();
-                
-
         }
-        private void Main_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
-        {}
-        private void Main_MouseMove(object sender, MouseEventArgs e)
-        {}
+
+        private void clearGraph_Click(object sender, EventArgs e)
+        {
+            photoChart.Series[0].Points.Clear();
+            chartx = 0;
+        }
+
+        private void Main_KeyUp(object sender, KeyEventArgs e)
+        {
+            stop();
+        }
+       
+
+
+
+
+
+
 
 
 
