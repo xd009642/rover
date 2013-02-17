@@ -12,6 +12,13 @@ using System.IO;
 
 namespace WIFIGUIDemo
 {
+    /**Comments
+     * 
+     * check boxes to say if a line is being plotted are named using the convention <Sensor>PlotOn i.e LinePlotOn
+     * speed has been changed to incorporate slider, should work - no promises
+     * graphs still plotted against time not distance, as distance measuring isn't accurate yet
+     * 
+     * */
     public partial class Main : Form
     {
         #region PRIVATE DATA MEMBERS
@@ -37,14 +44,19 @@ namespace WIFIGUIDemo
             myTimer.Interval = 100;
             myTimer.Enabled = true;
             myTimer.Start();
-            myTimer.Tick+=new EventHandler(MyTimer_Tick);             
-            
+            myTimer.Tick+=new EventHandler(MyTimer_Tick);
+
+            accelChart.Series[0].Points.Clear();
+            accelChart.Series[0].Points.AddY(10);
+            accelChart.Series[0].Points.AddY(20);
+            accelChart.Series[0].Points.AddY(30);
         }
        
             
 
         private void MyTimer_Tick(object sender, EventArgs e)
         {
+            
             
             if (theClient.isConnected)
             {
@@ -153,7 +165,8 @@ namespace WIFIGUIDemo
                         {
                             photodiodeValue=(NewData[5] + (NewData[4] << 8)) - 58900;
                             Photodiode.Text = photodiodeValue.ToString();
-                            photoChart.Series[0].Points.AddXY(chartx++, photodiodeValue);
+                            if(PhotoPlotOn.Checked)
+                                photoChart.Series[0].Points.AddXY(chartx++, photodiodeValue);
                             
                         }));
                         break;
@@ -176,14 +189,18 @@ namespace WIFIGUIDemo
                         this.BeginInvoke(new EventHandler(delegate
                          {
                              int x = (NewData[4]<< 8) + NewData[5] ;
-                             int z = (NewData[6]<< 8) + NewData[7] ;
-                             int y = (NewData[8] << 8) + NewData[9];
-                             MagnetData.Text = x.ToString() + "," + z.ToString() + "," + y.ToString();
-                             double rotate = Math.Atan2(y,x);
+                             int y = (NewData[6]<< 8) + NewData[7] ;
+                             int z = (NewData[8] << 8) + NewData[9];
+                             MagnetData.Text = x.ToString() + "," + y.ToString() + "," + z.ToString();
+                             double rotate = Math.Atan2(z,x);
                              if(rotate<0)
                                 rotate += 2*Math.PI;
                              rotate = rotate * (180 / Math.PI);
                              rotateBox.Text = rotate.ToString();
+                             magnetChart.Series[0].Points.Clear();
+                             magnetChart.Series[0].Points.AddY(x);
+                             magnetChart.Series[0].Points.AddY(y);
+                             magnetChart.Series[0].Points.AddY(z);
                          }));
                         break;
                     case (byte)CommandID.Accn:
@@ -199,6 +216,10 @@ namespace WIFIGUIDemo
                             accZ = accZ >> 4; accZ -= 2048;
                             AccnData.Text = accX.ToString() + "," + accY.ToString() + "," + accZ.ToString();
                             writer.WriteLine(AccnData.Text);
+                            accelChart.Series[0].Points.Clear();
+                            accelChart.Series[0].Points.AddY(accX);
+                            accelChart.Series[0].Points.AddY(accY);
+                            accelChart.Series[0].Points.AddY(accZ);
                         }));
                         break;
                     case (byte)CommandID.LineFollowing:
@@ -209,11 +230,15 @@ namespace WIFIGUIDemo
                             //int leftSensor = (NewData[5] << 8) | (NewData[6]);
                             int rightSensor = (NewData[7] + (NewData[8] << 8));
                             //int rightSensor = (NewData[7] << 8) | (NewData[8]);
+                            
                             LFLeft.Text = leftSensor.ToString();
                             LFRight.Text = rightSensor.ToString();
-                            lineChart.Series[0].Points.AddXY(linex, leftSensor);
-                            lineChart.Series[1].Points.AddXY(linex, rightSensor);
-                            linex++;
+                            if (LinePlotOn.Checked)
+                            {
+                                lineChart.Series[0].Points.AddXY(linex, leftSensor);
+                                lineChart.Series[1].Points.AddXY(linex, rightSensor);
+                                linex++;
+                            }
                         }));
                         break;
                     
@@ -340,38 +365,36 @@ namespace WIFIGUIDemo
         }
         private void forward()
         {
-            byte LMotion = 0x7F;
-            byte RMotion = 0x71;
+            int barValue = speedbar.Value;
+            byte LMotion = (byte)(127 * (barValue / 100.0));
+            byte RMotion = (byte)(113 * (barValue / 100.0));
             DualMotorCommand(new byte[] { LMotion, RMotion });
         }
-        private void SForward()
-        {
-            byte LMotion = 40;
-            byte RMotion = 38;
-            DualMotorCommand(new byte[] { LMotion, RMotion });
-        }
+        
         private void backward()
         {
-            byte RMotion = 0x81;
-            byte LMotion = 0x8F;
+            int barValue = speedbar.Value;
+            short L = (short)(-128 * (barValue / 100.0));
+            short R = (short)(-113 * (barValue / 100.0));
+            byte RMotion = (byte)L;
+            byte LMotion = (byte)R;
             DualMotorCommand(new byte[] { LMotion, RMotion });
         }
-        private void SBackward()
-        {
-            byte LMotion = 0xE2;
-            byte RMotion = 0xDA;
-            DualMotorCommand(new byte[] { LMotion, RMotion });
-        }
+       
         private void antiClockwise()
         {
-            byte LMotion = 0x7F;
-            byte RMotion = 0x81;
+            int barValue = speedbar.Value;
+            byte LMotion = (byte)(127 * (barValue / 100.0));
+            short R = (short)(-127 * (barValue / 100.0));
+            byte RMotion = (byte)R;
             DualMotorCommand(new byte[] { LMotion, RMotion });
         }
         private void clockwise()
         {
-            byte LMotion = 0x81;
-            byte RMotion = 0x7F;
+            int barValue = speedbar.Value;
+            short L = (short)(-127 * (barValue / 100.0));
+            byte LMotion = (byte)L;
+            byte RMotion = (byte)(127 * (barValue / 100.0));
             DualMotorCommand(new byte[] { LMotion, RMotion });
         }
 
@@ -384,10 +407,7 @@ namespace WIFIGUIDemo
         {
             forward();
         } 
-        private void SlowFoward_Click(object sender, EventArgs e)
-        {
-            SForward();
-        }
+        
         private void AntiClockwise_Click(object sender, EventArgs e)
         {
             antiClockwise();
@@ -400,10 +420,7 @@ namespace WIFIGUIDemo
         {
             backward();
         }
-        private void SlowBackward_Click(object sender, EventArgs e)
-        {
-            SBackward();
-        }
+        
 
 
         private void DualMotorCommand(byte[] command)
@@ -412,7 +429,7 @@ namespace WIFIGUIDemo
             {
                 theClient.SendData(CommandID.MotorSpeed12, command);
             }
-            groupBox2.Focus();
+            Accelerometer.Focus();
         }
 
         #endregion
@@ -444,15 +461,22 @@ namespace WIFIGUIDemo
                 writer.Flush();
         }
 
-        private void clearGraph_Click(object sender, EventArgs e)
-        {
-            photoChart.Series[0].Points.Clear();
-            chartx = 0;
-        }
-
         private void Main_KeyUp(object sender, KeyEventArgs e)
         {
             stop();
+        }
+
+        private void clearPhoto_Click(object sender, EventArgs e)
+        {
+             photoChart.Series[0].Points.Clear();
+             chartx = 0;
+        }
+
+        private void clearLine_Click(object sender, EventArgs e)
+        {
+            lineChart.Series[0].Points.Clear();
+            lineChart.Series[1].Points.Clear();
+            linex = 0;
         }
        
 

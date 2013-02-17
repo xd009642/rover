@@ -29,12 +29,22 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.Series series5 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.CustomLabel customLabel4 = new System.Windows.Forms.DataVisualization.Charting.CustomLabel();
+            System.Windows.Forms.DataVisualization.Charting.CustomLabel customLabel5 = new System.Windows.Forms.DataVisualization.Charting.CustomLabel();
+            System.Windows.Forms.DataVisualization.Charting.CustomLabel customLabel6 = new System.Windows.Forms.DataVisualization.Charting.CustomLabel();
+            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.CustomLabel customLabel1 = new System.Windows.Forms.DataVisualization.Charting.CustomLabel();
+            System.Windows.Forms.DataVisualization.Charting.CustomLabel customLabel2 = new System.Windows.Forms.DataVisualization.Charting.CustomLabel();
+            System.Windows.Forms.DataVisualization.Charting.CustomLabel customLabel3 = new System.Windows.Forms.DataVisualization.Charting.CustomLabel();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.cmdDisconnect = new System.Windows.Forms.Button();
             this.cmdConnect = new System.Windows.Forms.Button();
@@ -42,7 +52,7 @@
             this.lblIPAddress = new System.Windows.Forms.Label();
             this.txtPort = new System.Windows.Forms.TextBox();
             this.txtIPAddress = new System.Windows.Forms.TextBox();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.Accelerometer = new System.Windows.Forms.GroupBox();
             this.ExportData = new System.Windows.Forms.Button();
             this.rotateBox = new System.Windows.Forms.TextBox();
             this.LFRight = new System.Windows.Forms.TextBox();
@@ -68,14 +78,13 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.Motor1Dist = new System.Windows.Forms.TextBox();
-            this.SlowFoward = new System.Windows.Forms.Button();
             this.FowardButton = new System.Windows.Forms.Button();
-            this.SlowBackward = new System.Windows.Forms.Button();
             this.Backward = new System.Windows.Forms.Button();
             this.Clockwise = new System.Windows.Forms.Button();
             this.AntiClockwise = new System.Windows.Forms.Button();
             this.Stop = new System.Windows.Forms.Button();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.speedbar = new System.Windows.Forms.TrackBar();
             this.chkSwitch2Stat = new System.Windows.Forms.CheckBox();
             this.chkSwitch1Stat = new System.Windows.Forms.CheckBox();
             this.chkGreenStat = new System.Windows.Forms.CheckBox();
@@ -83,20 +92,29 @@
             this.cmdSwitchLedStatus = new System.Windows.Forms.Button();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.photoChart = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            this.clearGraph = new System.Windows.Forms.Button();
+            this.clearPhoto = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.LinePlotOn = new System.Windows.Forms.CheckBox();
+            this.clearLine = new System.Windows.Forms.Button();
+            this.PhotoPlotOn = new System.Windows.Forms.CheckBox();
             this.lineChart = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.label10 = new System.Windows.Forms.Label();
+            this.accelChart = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.magnetChart = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.groupBox1.SuspendLayout();
-            this.groupBox2.SuspendLayout();
+            this.Accelerometer.SuspendLayout();
             this.groupBox3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.speedbar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.photoChart)).BeginInit();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.lineChart)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.accelChart)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.magnetChart)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox1
@@ -169,39 +187,44 @@
             this.txtIPAddress.Size = new System.Drawing.Size(100, 20);
             this.txtIPAddress.TabIndex = 0;
             // 
-            // groupBox2
+            // Accelerometer
             // 
-            this.groupBox2.Controls.Add(this.ExportData);
-            this.groupBox2.Controls.Add(this.rotateBox);
-            this.groupBox2.Controls.Add(this.LFRight);
-            this.groupBox2.Controls.Add(this.LFLeft);
-            this.groupBox2.Controls.Add(this.label9);
-            this.groupBox2.Controls.Add(this.txtCounter);
-            this.groupBox2.Controls.Add(this.label8);
-            this.groupBox2.Controls.Add(this.chkRed);
-            this.groupBox2.Controls.Add(this.chkGreen);
-            this.groupBox2.Controls.Add(this.cmdGetCount);
-            this.groupBox2.Controls.Add(this.cmdSetLEDs);
-            this.groupBox2.Controls.Add(this.label7);
-            this.groupBox2.Controls.Add(this.label6);
-            this.groupBox2.Controls.Add(this.AccnData);
-            this.groupBox2.Controls.Add(this.label5);
-            this.groupBox2.Controls.Add(this.MagnetData);
-            this.groupBox2.Controls.Add(this.label4);
-            this.groupBox2.Controls.Add(this.label3);
-            this.groupBox2.Controls.Add(this.Photodiode);
-            this.groupBox2.Controls.Add(this.RightSpeed);
-            this.groupBox2.Controls.Add(this.LeftSpeed);
-            this.groupBox2.Controls.Add(this.Motor2Dist);
-            this.groupBox2.Controls.Add(this.label2);
-            this.groupBox2.Controls.Add(this.label1);
-            this.groupBox2.Controls.Add(this.Motor1Dist);
-            this.groupBox2.Location = new System.Drawing.Point(3, 3);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(803, 498);
-            this.groupBox2.TabIndex = 1;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Visualisation";
+            this.Accelerometer.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.Accelerometer.Controls.Add(this.magnetChart);
+            this.Accelerometer.Controls.Add(this.accelChart);
+            this.Accelerometer.Controls.Add(this.ExportData);
+            this.Accelerometer.Controls.Add(this.rotateBox);
+            this.Accelerometer.Controls.Add(this.LFRight);
+            this.Accelerometer.Controls.Add(this.LFLeft);
+            this.Accelerometer.Controls.Add(this.label9);
+            this.Accelerometer.Controls.Add(this.txtCounter);
+            this.Accelerometer.Controls.Add(this.label8);
+            this.Accelerometer.Controls.Add(this.chkRed);
+            this.Accelerometer.Controls.Add(this.chkGreen);
+            this.Accelerometer.Controls.Add(this.cmdGetCount);
+            this.Accelerometer.Controls.Add(this.cmdSetLEDs);
+            this.Accelerometer.Controls.Add(this.label7);
+            this.Accelerometer.Controls.Add(this.label6);
+            this.Accelerometer.Controls.Add(this.AccnData);
+            this.Accelerometer.Controls.Add(this.label5);
+            this.Accelerometer.Controls.Add(this.MagnetData);
+            this.Accelerometer.Controls.Add(this.label4);
+            this.Accelerometer.Controls.Add(this.label3);
+            this.Accelerometer.Controls.Add(this.Photodiode);
+            this.Accelerometer.Controls.Add(this.RightSpeed);
+            this.Accelerometer.Controls.Add(this.LeftSpeed);
+            this.Accelerometer.Controls.Add(this.Motor2Dist);
+            this.Accelerometer.Controls.Add(this.label2);
+            this.Accelerometer.Controls.Add(this.label1);
+            this.Accelerometer.Controls.Add(this.Motor1Dist);
+            this.Accelerometer.Location = new System.Drawing.Point(3, 3);
+            this.Accelerometer.Margin = new System.Windows.Forms.Padding(1);
+            this.Accelerometer.Name = "Accelerometer";
+            this.Accelerometer.Padding = new System.Windows.Forms.Padding(1);
+            this.Accelerometer.Size = new System.Drawing.Size(803, 498);
+            this.Accelerometer.TabIndex = 1;
+            this.Accelerometer.TabStop = false;
+            this.Accelerometer.Text = "Visualisation";
             // 
             // ExportData
             // 
@@ -237,7 +260,7 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(475, 86);
+            this.label9.Location = new System.Drawing.Point(473, 84);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(102, 13);
             this.label9.TabIndex = 35;
@@ -253,7 +276,7 @@
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(360, 85);
+            this.label8.Location = new System.Drawing.Point(358, 83);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(95, 13);
             this.label8.TabIndex = 34;
@@ -262,7 +285,7 @@
             // chkRed
             // 
             this.chkRed.AutoSize = true;
-            this.chkRed.Location = new System.Drawing.Point(129, 162);
+            this.chkRed.Location = new System.Drawing.Point(127, 160);
             this.chkRed.Name = "chkRed";
             this.chkRed.Size = new System.Drawing.Size(70, 17);
             this.chkRed.TabIndex = 5;
@@ -272,7 +295,7 @@
             // chkGreen
             // 
             this.chkGreen.AutoSize = true;
-            this.chkGreen.Location = new System.Drawing.Point(11, 162);
+            this.chkGreen.Location = new System.Drawing.Point(9, 160);
             this.chkGreen.Name = "chkGreen";
             this.chkGreen.Size = new System.Drawing.Size(79, 17);
             this.chkGreen.TabIndex = 4;
@@ -302,7 +325,7 @@
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(126, 87);
+            this.label7.Location = new System.Drawing.Point(124, 85);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(96, 13);
             this.label7.TabIndex = 29;
@@ -311,7 +334,7 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(11, 82);
+            this.label6.Location = new System.Drawing.Point(9, 80);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(89, 13);
             this.label6.TabIndex = 28;
@@ -319,7 +342,7 @@
             // 
             // AccnData
             // 
-            this.AccnData.Location = new System.Drawing.Point(356, 49);
+            this.AccnData.Location = new System.Drawing.Point(358, 49);
             this.AccnData.Name = "AccnData";
             this.AccnData.ScrollBars = System.Windows.Forms.ScrollBars.Horizontal;
             this.AccnData.Size = new System.Drawing.Size(107, 20);
@@ -328,7 +351,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(353, 28);
+            this.label5.Location = new System.Drawing.Point(353, 26);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(75, 13);
             this.label5.TabIndex = 26;
@@ -344,7 +367,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(475, 28);
+            this.label4.Location = new System.Drawing.Point(473, 26);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(75, 13);
             this.label4.TabIndex = 24;
@@ -353,7 +376,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(610, 26);
+            this.label3.Location = new System.Drawing.Point(608, 24);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(90, 13);
             this.label3.TabIndex = 23;
@@ -390,7 +413,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(120, 31);
+            this.label2.Location = new System.Drawing.Point(118, 29);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(83, 13);
             this.label2.TabIndex = 18;
@@ -399,7 +422,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(6, 31);
+            this.label1.Location = new System.Drawing.Point(4, 29);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(76, 13);
             this.label1.TabIndex = 17;
@@ -412,19 +435,9 @@
             this.Motor1Dist.Size = new System.Drawing.Size(96, 20);
             this.Motor1Dist.TabIndex = 16;
             // 
-            // SlowFoward
-            // 
-            this.SlowFoward.Location = new System.Drawing.Point(76, 61);
-            this.SlowFoward.Name = "SlowFoward";
-            this.SlowFoward.Size = new System.Drawing.Size(97, 22);
-            this.SlowFoward.TabIndex = 33;
-            this.SlowFoward.Text = "Slow Forward";
-            this.SlowFoward.UseVisualStyleBackColor = true;
-            this.SlowFoward.Click += new System.EventHandler(this.SlowFoward_Click);
-            // 
             // FowardButton
             // 
-            this.FowardButton.Location = new System.Drawing.Point(76, 33);
+            this.FowardButton.Location = new System.Drawing.Point(76, 64);
             this.FowardButton.Name = "FowardButton";
             this.FowardButton.Size = new System.Drawing.Size(97, 22);
             this.FowardButton.TabIndex = 32;
@@ -432,20 +445,9 @@
             this.FowardButton.UseVisualStyleBackColor = true;
             this.FowardButton.Click += new System.EventHandler(this.FowardButton_Click);
             // 
-            // SlowBackward
-            // 
-            this.SlowBackward.Location = new System.Drawing.Point(76, 135);
-            this.SlowBackward.Name = "SlowBackward";
-            this.SlowBackward.Size = new System.Drawing.Size(97, 22);
-            this.SlowBackward.TabIndex = 31;
-            this.SlowBackward.TabStop = false;
-            this.SlowBackward.Text = "Slow Backward";
-            this.SlowBackward.UseVisualStyleBackColor = true;
-            this.SlowBackward.Click += new System.EventHandler(this.SlowBackward_Click);
-            // 
             // Backward
             // 
-            this.Backward.Location = new System.Drawing.Point(73, 163);
+            this.Backward.Location = new System.Drawing.Point(73, 135);
             this.Backward.Name = "Backward";
             this.Backward.Size = new System.Drawing.Size(100, 23);
             this.Backward.TabIndex = 16;
@@ -488,6 +490,7 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.speedbar);
             this.groupBox3.Controls.Add(this.chkSwitch2Stat);
             this.groupBox3.Controls.Add(this.chkSwitch1Stat);
             this.groupBox3.Controls.Add(this.chkGreenStat);
@@ -498,14 +501,22 @@
             this.groupBox3.Controls.Add(this.AntiClockwise);
             this.groupBox3.Controls.Add(this.Clockwise);
             this.groupBox3.Controls.Add(this.Backward);
-            this.groupBox3.Controls.Add(this.SlowFoward);
-            this.groupBox3.Controls.Add(this.SlowBackward);
             this.groupBox3.Location = new System.Drawing.Point(821, 136);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(225, 374);
             this.groupBox3.TabIndex = 2;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Commands";
+            // 
+            // speedbar
+            // 
+            this.speedbar.Location = new System.Drawing.Point(8, 164);
+            this.speedbar.Maximum = 100;
+            this.speedbar.Minimum = 20;
+            this.speedbar.Name = "speedbar";
+            this.speedbar.Size = new System.Drawing.Size(211, 45);
+            this.speedbar.TabIndex = 41;
+            this.speedbar.Value = 20;
             // 
             // chkSwitch2Stat
             // 
@@ -568,27 +579,27 @@
             // 
             // photoChart
             // 
-            chartArea1.Name = "ChartArea1";
-            this.photoChart.ChartAreas.Add(chartArea1);
+            chartArea3.Name = "ChartArea1";
+            this.photoChart.ChartAreas.Add(chartArea3);
             this.photoChart.Location = new System.Drawing.Point(18, 20);
             this.photoChart.Name = "photoChart";
-            series1.ChartArea = "ChartArea1";
-            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series1.Name = "Series2";
-            this.photoChart.Series.Add(series1);
-            this.photoChart.Size = new System.Drawing.Size(596, 236);
+            series3.ChartArea = "ChartArea1";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series3.Name = "Series2";
+            this.photoChart.Series.Add(series3);
+            this.photoChart.Size = new System.Drawing.Size(404, 236);
             this.photoChart.TabIndex = 23;
             this.photoChart.Text = "chart1";
             // 
-            // clearGraph
+            // clearPhoto
             // 
-            this.clearGraph.Location = new System.Drawing.Point(620, 41);
-            this.clearGraph.Name = "clearGraph";
-            this.clearGraph.Size = new System.Drawing.Size(75, 23);
-            this.clearGraph.TabIndex = 39;
-            this.clearGraph.Text = "clear graph";
-            this.clearGraph.UseVisualStyleBackColor = true;
-            this.clearGraph.Click += new System.EventHandler(this.clearGraph_Click);
+            this.clearPhoto.Location = new System.Drawing.Point(428, 176);
+            this.clearPhoto.Name = "clearPhoto";
+            this.clearPhoto.Size = new System.Drawing.Size(75, 23);
+            this.clearPhoto.TabIndex = 39;
+            this.clearPhoto.Text = "clear graph";
+            this.clearPhoto.UseVisualStyleBackColor = true;
+            this.clearPhoto.Click += new System.EventHandler(this.clearPhoto_Click);
             // 
             // tabPage2
             // 
@@ -611,7 +622,7 @@
             // 
             // tabPage1
             // 
-            this.tabPage1.Controls.Add(this.groupBox2);
+            this.tabPage1.Controls.Add(this.Accelerometer);
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
@@ -622,38 +633,133 @@
             // 
             // tabPage3
             // 
+            this.tabPage3.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.tabPage3.Controls.Add(this.label10);
+            this.tabPage3.Controls.Add(this.LinePlotOn);
+            this.tabPage3.Controls.Add(this.clearLine);
+            this.tabPage3.Controls.Add(this.PhotoPlotOn);
             this.tabPage3.Controls.Add(this.lineChart);
             this.tabPage3.Controls.Add(this.photoChart);
-            this.tabPage3.Controls.Add(this.clearGraph);
+            this.tabPage3.Controls.Add(this.clearPhoto);
             this.tabPage3.Location = new System.Drawing.Point(4, 22);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
             this.tabPage3.Size = new System.Drawing.Size(806, 483);
             this.tabPage3.TabIndex = 1;
             this.tabPage3.Text = "Graphs";
-            this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // LinePlotOn
+            // 
+            this.LinePlotOn.AutoSize = true;
+            this.LinePlotOn.Enabled = false;
+            this.LinePlotOn.Location = new System.Drawing.Point(428, 406);
+            this.LinePlotOn.Name = "LinePlotOn";
+            this.LinePlotOn.Size = new System.Drawing.Size(70, 17);
+            this.LinePlotOn.TabIndex = 43;
+            this.LinePlotOn.Text = "Plot Data";
+            this.LinePlotOn.UseVisualStyleBackColor = true;
+            // 
+            // clearLine
+            // 
+            this.clearLine.Location = new System.Drawing.Point(428, 377);
+            this.clearLine.Name = "clearLine";
+            this.clearLine.Size = new System.Drawing.Size(75, 23);
+            this.clearLine.TabIndex = 42;
+            this.clearLine.Text = "clear graph";
+            this.clearLine.UseVisualStyleBackColor = true;
+            this.clearLine.Click += new System.EventHandler(this.clearLine_Click);
+            // 
+            // PhotoPlotOn
+            // 
+            this.PhotoPlotOn.AutoSize = true;
+            this.PhotoPlotOn.Enabled = false;
+            this.PhotoPlotOn.Location = new System.Drawing.Point(428, 205);
+            this.PhotoPlotOn.Name = "PhotoPlotOn";
+            this.PhotoPlotOn.Size = new System.Drawing.Size(70, 17);
+            this.PhotoPlotOn.TabIndex = 41;
+            this.PhotoPlotOn.Text = "Plot Data";
+            this.PhotoPlotOn.UseVisualStyleBackColor = true;
             // 
             // lineChart
             // 
-            chartArea2.Name = "ChartArea1";
-            this.lineChart.ChartAreas.Add(chartArea2);
+            chartArea4.Name = "ChartArea1";
+            this.lineChart.ChartAreas.Add(chartArea4);
             legend1.Name = "Legend1";
             this.lineChart.Legends.Add(legend1);
-            this.lineChart.Location = new System.Drawing.Point(49, 248);
+            this.lineChart.Location = new System.Drawing.Point(18, 248);
             this.lineChart.Name = "lineChart";
-            series2.ChartArea = "ChartArea1";
-            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series2.Legend = "Legend1";
-            series2.Name = "Series1";
-            series3.ChartArea = "ChartArea1";
-            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series3.Legend = "Legend1";
-            series3.Name = "Series2";
-            this.lineChart.Series.Add(series2);
-            this.lineChart.Series.Add(series3);
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series4.Legend = "Legend1";
+            series4.LegendText = "Left";
+            series4.Name = "Series1";
+            series5.ChartArea = "ChartArea1";
+            series5.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series5.Legend = "Legend1";
+            series5.LegendText = "Right";
+            series5.Name = "Series2";
+            this.lineChart.Series.Add(series4);
+            this.lineChart.Series.Add(series5);
             this.lineChart.Size = new System.Drawing.Size(509, 207);
             this.lineChart.TabIndex = 40;
             this.lineChart.Text = "chart1";
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(58, 17);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(81, 13);
+            this.label10.TabIndex = 44;
+            this.label10.Text = "Photodiode plot";
+            // 
+            // accelChart
+            // 
+            customLabel4.Text = "\'X\'";
+            customLabel5.Text = "Y";
+            customLabel6.Text = "Z";
+            chartArea2.AxisX.CustomLabels.Add(customLabel4);
+            chartArea2.AxisX.CustomLabels.Add(customLabel5);
+            chartArea2.AxisX.CustomLabels.Add(customLabel6);
+            chartArea2.AxisX.Maximum = 3.5D;
+            chartArea2.AxisX.Minimum = 0.5D;
+            chartArea2.BorderWidth = 0;
+            chartArea2.Name = "ChartArea1";
+            this.accelChart.ChartAreas.Add(chartArea2);
+            this.accelChart.Location = new System.Drawing.Point(354, 185);
+            this.accelChart.Margin = new System.Windows.Forms.Padding(0);
+            this.accelChart.Name = "accelChart";
+            series2.ChartArea = "ChartArea1";
+            series2.CustomProperties = "PointWidth=1";
+            series2.Name = "Series1";
+            this.accelChart.Series.Add(series2);
+            this.accelChart.Size = new System.Drawing.Size(192, 135);
+            this.accelChart.TabIndex = 2;
+            this.accelChart.Text = "chart1";
+            // 
+            // magnetChart
+            // 
+            customLabel1.Text = "\'X\'";
+            customLabel2.Text = "Y";
+            customLabel3.Text = "Z";
+            chartArea1.AxisX.CustomLabels.Add(customLabel1);
+            chartArea1.AxisX.CustomLabels.Add(customLabel2);
+            chartArea1.AxisX.CustomLabels.Add(customLabel3);
+            chartArea1.AxisX.Maximum = 3.5D;
+            chartArea1.AxisX.Minimum = 0.5D;
+            chartArea1.BorderWidth = 0;
+            chartArea1.Name = "ChartArea1";
+            this.magnetChart.ChartAreas.Add(chartArea1);
+            this.magnetChart.Location = new System.Drawing.Point(576, 184);
+            this.magnetChart.Margin = new System.Windows.Forms.Padding(0);
+            this.magnetChart.Name = "magnetChart";
+            series1.ChartArea = "ChartArea1";
+            series1.CustomProperties = "PointWidth=1";
+            series1.Name = "Series1";
+            this.magnetChart.Series.Add(series1);
+            this.magnetChart.Size = new System.Drawing.Size(192, 135);
+            this.magnetChart.TabIndex = 39;
+            this.magnetChart.Text = "chart1";
             // 
             // Main
             // 
@@ -671,15 +777,19 @@
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Main_KeyUp);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox2.PerformLayout();
+            this.Accelerometer.ResumeLayout(false);
+            this.Accelerometer.PerformLayout();
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.speedbar)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.photoChart)).EndInit();
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage3.ResumeLayout(false);
+            this.tabPage3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.lineChart)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.accelChart)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.magnetChart)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -689,7 +799,7 @@
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.TextBox txtPort;
         private System.Windows.Forms.TextBox txtIPAddress;
-        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.GroupBox Accelerometer;
         private System.Windows.Forms.Label lbPort;
         private System.Windows.Forms.Label lblIPAddress;
         private System.Windows.Forms.Button cmdDisconnect;
@@ -725,21 +835,26 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.Button SlowBackward;
         private System.Windows.Forms.Button FowardButton;
-        private System.Windows.Forms.Button SlowFoward;
         private System.Windows.Forms.TextBox LFRight;
         private System.Windows.Forms.TextBox LFLeft;
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.TextBox rotateBox;
         private System.Windows.Forms.DataVisualization.Charting.Chart photoChart;
-        private System.Windows.Forms.Button clearGraph;
+        private System.Windows.Forms.Button clearPhoto;
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage3;
         private System.Windows.Forms.DataVisualization.Charting.Chart lineChart;
+        private System.Windows.Forms.TrackBar speedbar;
+        private System.Windows.Forms.CheckBox PhotoPlotOn;
+        private System.Windows.Forms.CheckBox LinePlotOn;
+        private System.Windows.Forms.Button clearLine;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.DataVisualization.Charting.Chart accelChart;
+        private System.Windows.Forms.DataVisualization.Charting.Chart magnetChart;
     }
 }
 
