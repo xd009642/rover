@@ -30,9 +30,10 @@ namespace WIFIGUIDemo
         #endregion
         Timer myTimer;
         StreamWriter writer;
-        bool exp = true;
+        bool exp = true, AccDistOn = false;
         int photodiodeValue = 0, LmotorPos=0, LmotorVel=0,
-            RmotorPos=0, RmotorVel=0;
+            RmotorPos=0, RmotorVel=0, AccDistGoal = 0;
+
         /// <summary>
         /// Main Form Constructor
         /// </summary>
@@ -41,11 +42,11 @@ namespace WIFIGUIDemo
             this.KeyPreview = true;
             InitializeComponent();
             myTimer = new Timer();
-            myTimer.Interval = 100;
+            myTimer.Interval = 500;
             myTimer.Enabled = true;
             myTimer.Start();
             myTimer.Tick+=new EventHandler(MyTimer_Tick);
-
+            
             accelChart.Series[0].Points.Clear();
             accelChart.Series[0].Points.AddY(10);
             accelChart.Series[0].Points.AddY(20);
@@ -66,6 +67,11 @@ namespace WIFIGUIDemo
                 theClient.SendData(CommandID.LineFollowing);
                 cmdSwitchLedStatus_Click(null, null);
                 Export();
+                if ((AccDistGoal < RmotorPos) && (AccDistOn))
+                {
+                    AccDistOn = false;
+                    stop();
+                }
             } 
         }
         /// <summary>
@@ -154,6 +160,7 @@ namespace WIFIGUIDemo
                         //Invokation to allow cross thread manipulation
                         this.BeginInvoke(new EventHandler(delegate
                         {
+                            
                             chkSwitch1Stat.Checked = ((NewData[4] & 0x01) == 0x01) ? true : false;
                             chkSwitch2Stat.Checked = ((NewData[4] & 0x02) == 0x02) ? true : false;
                             chkGreenStat.Checked = ((NewData[4] & 0x10) != 0x10) ? true : false;
@@ -175,32 +182,48 @@ namespace WIFIGUIDemo
                     case (byte)CommandID.MotorPosStat:
                         this.BeginInvoke(new EventHandler(delegate
                          {
-                             LmotorPos=(NewData[5]+(NewData[6]<<8));
-                             LmotorVel=NewData[4];
-                             RmotorPos=(NewData[8]+(NewData[9]<<8));
-                             RmotorVel=NewData[7];
-                             Motor1Dist.Text = (NewData[5]+(NewData[6]<<8)).ToString();
-                             Motor2Dist.Text = (NewData[8] + (NewData[9] << 8)).ToString();
-                             LeftSpeed.Text = NewData[4].ToString();
-                             RightSpeed.Text = NewData[7].ToString();
+                             try
+                             {
+                                 LmotorPos=(NewData[5]+(NewData[6]<<8));
+                                 LmotorVel=NewData[4];
+                                 RmotorPos=(NewData[8]+(NewData[9]<<8));
+                                 RmotorVel=NewData[7];
+                                 Motor1Dist.Text = (NewData[5]+(NewData[6]<<8)).ToString();
+                                 Motor2Dist.Text = (NewData[8] + (NewData[9] << 8)).ToString();
+                                 LeftSpeed.Text = NewData[4].ToString();
+                                 RightSpeed.Text = NewData[7].ToString();
+                             }
+                            catch (ArgumentOutOfRangeException exception)
+                            {
+                                Motor1Dist.Text = "packet loss";
+                                Motor2Dist.Text = exception.ToString();
+                            }
                          }));
                         break;
                     case (byte)CommandID.Magnet:
                         this.BeginInvoke(new EventHandler(delegate
                          {
-                             int x = (NewData[4]<< 8) + NewData[5] ;
-                             int y = (NewData[6]<< 8) + NewData[7] ;
-                             int z = (NewData[8] << 8) + NewData[9];
-                             MagnetData.Text = x.ToString() + "," + y.ToString() + "," + z.ToString();
-                             double rotate = Math.Atan2(z,x);
-                             if(rotate<0)
-                                rotate += 2*Math.PI;
-                             rotate = rotate * (180 / Math.PI);
-                             rotateBox.Text = rotate.ToString();
-                             magnetChart.Series[0].Points.Clear();
-                             magnetChart.Series[0].Points.AddY(x);
-                             magnetChart.Series[0].Points.AddY(y);
-                             magnetChart.Series[0].Points.AddY(z);
+                             try
+                             {
+                                 int x = (NewData[4]<< 8) + NewData[5] ;
+                                 int y = (NewData[6]<< 8) + NewData[7] ;
+                                 int z = (NewData[8] << 8) + NewData[9];
+                                 MagnetData.Text = x.ToString() + "," + y.ToString() + "," + z.ToString();
+                                 double rotate = Math.Atan2(z,x);
+                                 if(rotate<0)
+                                    rotate += 2*Math.PI;
+                                 rotate = rotate * (180 / Math.PI);
+                                 rotateBox.Text = rotate.ToString();
+                                 magnetChart.Series[0].Points.Clear();
+                                 magnetChart.Series[0].Points.AddY(x);
+                                 magnetChart.Series[0].Points.AddY(y);
+                                 magnetChart.Series[0].Points.AddY(z);
+                             }
+                             catch (ArgumentOutOfRangeException exception)
+                             {
+                                 MagnetData.Text = "packet loss";
+
+                             }
                          }));
                         break;
                     case (byte)CommandID.Accn:
@@ -208,36 +231,62 @@ namespace WIFIGUIDemo
                         
                         this.BeginInvoke(new EventHandler(delegate
                         {
-                            int accX = (NewData[4] << 8) | (NewData[5]);
-                            accX = accX >> 4; accX -= 2048;
-                            int accY = (NewData[6] << 8) | (NewData[7]);
-                            accY = accY >> 4; accY -= 2048;
-                            int accZ = (NewData[8] << 8) | (NewData[9]);
-                            accZ = accZ >> 4; accZ -= 2048;
-                            AccnData.Text = accX.ToString() + "," + accY.ToString() + "," + accZ.ToString();
-                            writer.WriteLine(AccnData.Text);
-                            accelChart.Series[0].Points.Clear();
-                            accelChart.Series[0].Points.AddY(accX);
-                            accelChart.Series[0].Points.AddY(accY);
-                            accelChart.Series[0].Points.AddY(accZ);
+                            try
+                            {
+                                int accX = (NewData[4] << 8) | (NewData[5]);
+                                accX = accX >> 4; accX -= 2048;
+                                int accY = (NewData[6] << 8) | (NewData[7]);
+                                accY = accY >> 4; accY -= 2048;
+                                int accZ = (NewData[8] << 8) | (NewData[9]);
+                                accZ = accZ >> 4; accZ -= 2048;
+                                AccnData.Text = accX.ToString() + "," + accY.ToString() + "," + accZ.ToString();
+                                writer.WriteLine(AccnData.Text);
+                                accelChart.Series[0].Points.Clear();
+                                accelChart.Series[0].Points.AddY(accX);
+                                accelChart.Series[0].Points.AddY(accY);
+                                accelChart.Series[0].Points.AddY(accZ);
+                            }
+                            catch (ArgumentOutOfRangeException exception)
+                            {
+                               AccnData.Text = "packet loss";
+                                
+                            }
                         }));
                         break;
                     case (byte)CommandID.LineFollowing:
 
                         this.BeginInvoke(new EventHandler(delegate
                         {
-                            int leftSensor = (NewData[5] + (NewData[6] << 8));
-                            //int leftSensor = (NewData[5] << 8) | (NewData[6]);
-                            int rightSensor = (NewData[7] + (NewData[8] << 8));
-                            //int rightSensor = (NewData[7] << 8) | (NewData[8]);
-                            
-                            LFLeft.Text = leftSensor.ToString();
-                            LFRight.Text = rightSensor.ToString();
-                            if (LinePlotOn.Checked)
+                            try
                             {
-                                lineChart.Series[0].Points.AddXY(linex, leftSensor);
-                                lineChart.Series[1].Points.AddXY(linex, rightSensor);
-                                linex++;
+
+                                int leftSensor = (NewData[5] + (NewData[6] << 8));
+                                //int leftSensor = (NewData[5] << 8) | (NewData[6]);
+                                int rightSensor = (NewData[7] + (NewData[8] << 8));
+                                //int rightSensor = (NewData[7] << 8) | (NewData[8]);
+
+                                LFLeft.Text = leftSensor.ToString();
+                                LFRight.Text = rightSensor.ToString();
+                                //okay motor pos is used to plot in terms of distance 
+                                //this isn't properly implemented yet so i just used the 
+                                //only distance variables we have.
+                                if (RiverDataOn.Checked)
+                                {
+                                    RiverChart.Series[0].Points.AddXY(linex, leftSensor);
+                                    RiverChart.Series[1].Points.AddXY(linex, rightSensor);
+                                    linex++;
+                                }
+                                else if (LinePlotOn.Checked)
+                                {
+                                    lineChart.Series[0].Points.AddXY(linex, leftSensor);
+                                    lineChart.Series[1].Points.AddXY(linex, rightSensor);
+                                    linex++;
+                                }
+                            }
+                            catch (ArgumentOutOfRangeException exception)
+                            {
+                                LFLeft.Text = "packet loss";
+                                LFRight.Text = exception.ToString();
                             }
                         }));
                         break;
@@ -367,7 +416,7 @@ namespace WIFIGUIDemo
         {
             int barValue = speedbar.Value;
             byte LMotion = (byte)(127 * (barValue / 100.0));
-            byte RMotion = (byte)(113 * (barValue / 100.0));
+            byte RMotion = (byte)(127 * (barValue / 100.0));
             DualMotorCommand(new byte[] { LMotion, RMotion });
         }
         
@@ -429,7 +478,7 @@ namespace WIFIGUIDemo
             {
                 theClient.SendData(CommandID.MotorSpeed12, command);
             }
-            Accelerometer.Focus();
+           // Accelerometer.Focus();
         }
 
         #endregion
@@ -456,7 +505,9 @@ namespace WIFIGUIDemo
         private void Export()
         {
   
-                //writer.Write(txtCounter.Text + "," + LmotorPos.ToString() + "," + RmotorPos.ToString() + ","                  + LmotorVel.ToString() + "," + RmotorVel.ToString() + "," +                    photodiodeValue.ToString() + "," +  MagnetData.Text+ ","  + AccnData.Text + "\r\n");
+                writer.Write(txtCounter.Text + "," + LmotorPos.ToString() + "," + RmotorPos.ToString() + ","                  
+                    + LmotorVel.ToString() + "," + RmotorVel.ToString() + "," +                    
+                    photodiodeValue.ToString() + "," +  MagnetData.Text+ ","  + AccnData.Text + "\r\n");
 
                 writer.Flush();
         }
@@ -466,6 +517,7 @@ namespace WIFIGUIDemo
             stop();
         }
 
+        #region GRAPHING
         private void clearPhoto_Click(object sender, EventArgs e)
         {
              photoChart.Series[0].Points.Clear();
@@ -478,31 +530,63 @@ namespace WIFIGUIDemo
             lineChart.Series[1].Points.Clear();
             linex = 0;
         }
-       
+        private void RiverClear_Click(object sender, EventArgs e)
+        {
+            RiverChart.Series[0].Points.Clear();
+            RiverChart.Series[1].Points.Clear();
+            linex = 0;
+        }
 
+        #endregion 
 
+        private void speedbar_MouseHover(object sender, EventArgs e)
+        {
+            ToolTip speedBarTip = new ToolTip();
+            speedBarTip.UseFading = true;
+            speedBarTip.AutoPopDelay = 1000;
+            
+            speedBarTip.ShowAlways=true;
+            speedBarTip.SetToolTip(speedbar, speedbar.Value.ToString());
+        }
 
-
-
-
-
-
+        private void AccDistance_Click(object sender, EventArgs e)
+        {
+            double distTravel = 0;
+            double distNeedTravel = 0;
+            double MotorConst = 850;
+            double MStartValue = 0;
+            distNeedTravel = float.Parse(AccDist.Text.ToString());
+            distTravel = distNeedTravel * MotorConst;
+            MStartValue = RmotorPos;
+            forward();
+            AccDistOn = true;
+            AccDistGoal = (int)(MStartValue + distTravel);
+        }
 
         
 
-       
-
-        
-
-       
 
 
 
 
 
 
-        
 
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 }
