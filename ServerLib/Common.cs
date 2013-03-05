@@ -20,7 +20,12 @@ namespace ServerLib
         MotorSpeed12 = 0x07,
         LineFollowing = 0x08,
         PhotoDiode = 17,
+        LED=21, 
+        Servo1 = 22,            //grab
+        Servo2 = 23,            //raise lower
         Accn = 40,              //Accelerometer
-        Magnet = 45             //Magnetometer
+        Magnet = 45,            //Magnetometer
+        River=46,
+        
     };
 }

@@ -34,6 +34,9 @@ namespace WIFIGUIDemo
         int photodiodeValue = 0, LmotorPos=0, LmotorVel=0,
             RmotorPos=0, RmotorVel=0, AccDistGoal = 0;
 
+        byte clawGrab = 160;
+        byte clawHeight = 70;
+
         /// <summary>
         /// Main Form Constructor
         /// </summary>
@@ -46,32 +49,66 @@ namespace WIFIGUIDemo
             myTimer.Enabled = true;
             myTimer.Start();
             myTimer.Tick+=new EventHandler(MyTimer_Tick);
-            
-            accelChart.Series[0].Points.Clear();
-            accelChart.Series[0].Points.AddY(10);
-            accelChart.Series[0].Points.AddY(20);
-            accelChart.Series[0].Points.AddY(30);
+
+            //initialise claw to position
+            theClient.SendData(CommandID.Servo1, new byte[] { clawGrab });
+            theClient.SendData(CommandID.Servo2, new byte[] { clawHeight });
         }
        
             
 
         private void MyTimer_Tick(object sender, EventArgs e)
         {
-            
+            if (ManClockOn.Checked)
+                myTimer.Interval = Convert.ToInt16(ClockText.Text);
             
             if (theClient.isConnected)
             {
-                theClient.SendData(CommandID.InternalCounter, new byte[] { });
-                theClient.SendData(CommandID.Magnet);
-                theClient.SendData(CommandID.Accn);
-                theClient.SendData(CommandID.LineFollowing);
-                cmdSwitchLedStatus_Click(null, null);
-                Export();
-                if ((AccDistGoal < RmotorPos) && (AccDistOn))
-                {
-                    AccDistOn = false;
-                    stop();
-                }
+                
+                
+                    theClient.SendData(CommandID.InternalCounter, new byte[] { });
+                    if (MagOn.Checked)
+                        theClient.SendData(CommandID.Magnet);
+                    if (LEDOn.Checked)
+                        theClient.SendData(CommandID.LED, new byte[] {0xFF});
+                    else
+                        theClient.SendData(CommandID.LED, new byte[] { 0x00 });
+                    if (AccelOn.Checked)
+                        theClient.SendData(CommandID.Accn);
+                    if (LineFolOn.Checked)
+                        theClient.SendData(CommandID.LineFollowing);
+                    if (PhotoOn.Checked)
+                        theClient.SendData(CommandID.PhotoDiode, new byte[] { });
+                    if(MotorDataOn.Checked)
+                        theClient.SendData(CommandID.MotorPosStat, new byte[] { });
+                    cmdSwitchLedStatus_Click(null, null);
+                    Export();
+                    if ((AccDistGoal < RmotorPos) && (AccDistOn))
+                    {
+                        AccDistOn = false;
+                        stop();
+                    }
+                    int tickCount = 0;
+                    if (LineFollowing.Checked)
+                    {
+                        LineFolOn.Checked = true;
+                        if ((tickCount % 7) == 0)
+                        {
+                            stop();
+                            LineFollow();
+                        }
+                    }
+                    else if (ReverseLineFol.Checked)
+                    {
+                        LineFolOn.Checked = true;
+                        if ((tickCount % 7) == 0)
+                        {
+                            stop();
+                            ReverseLineFollow();
+                        }
+                    }
+                    tickCount++;
+                
             } 
         }
         /// <summary>
@@ -129,7 +166,7 @@ namespace WIFIGUIDemo
             }
         }
 
-        int chartx = 0, linex=0;
+        int chartx = 0, linex=0, riverx=0;
         /// <summary>
         /// Data received handler - when data is pushed from the rover to this program the event handler here
         /// parses the incoming data
@@ -149,10 +186,11 @@ namespace WIFIGUIDemo
                         break;
                     //If internal counter byte received
                     case (byte)CommandID.InternalCounter:
+                        
                         //Invokation to allow cross thread manipulation
                         this.BeginInvoke(new EventHandler(delegate
                         {
-                            txtCounter.Text = (NewData[4] + (NewData[5] << 8)).ToString();
+                                  txtCounter.Text = (NewData[4] + (NewData[5] << 8)).ToString();
                         }));
                         break;
                     //Command ID byte to show the switch and LED current status
@@ -173,7 +211,7 @@ namespace WIFIGUIDemo
                             photodiodeValue=(NewData[5] + (NewData[4] << 8)) - 58900;
                             Photodiode.Text = photodiodeValue.ToString();
                             if(PhotoPlotOn.Checked)
-                                photoChart.Series[0].Points.AddXY(chartx++, photodiodeValue);
+                                photoChart.Series[0].Points.AddXY(LmotorPos, photodiodeValue);
                             
                         }));
                         break;
@@ -184,9 +222,9 @@ namespace WIFIGUIDemo
                          {
                              try
                              {
-                                 LmotorPos=(NewData[5]+(NewData[6]<<8));
+                                 LmotorPos=(NewData[5]|(NewData[6]<<8));
                                  LmotorVel=NewData[4];
-                                 RmotorPos=(NewData[8]+(NewData[9]<<8));
+                                 RmotorPos=(NewData[8]|(NewData[9]<<8));
                                  RmotorVel=NewData[7];
                                  Motor1Dist.Text = (NewData[5]+(NewData[6]<<8)).ToString();
                                  Motor2Dist.Text = (NewData[8] + (NewData[9] << 8)).ToString();
@@ -205,9 +243,12 @@ namespace WIFIGUIDemo
                          {
                              try
                              {
-                                 int x = (NewData[4]<< 8) + NewData[5] ;
-                                 int y = (NewData[6]<< 8) + NewData[7] ;
-                                 int z = (NewData[8] << 8) + NewData[9];
+                                 int x = (NewData[4]<< 8) | NewData[5] ;
+                                 x = x >> 4; x -= 2048;
+                                 int y = (NewData[6]<< 8) | NewData[7] ;
+                                 y = y >> 4; y -= 2048;
+                                 int z = (NewData[8] << 8) | NewData[9];
+                                 z = z >> 4; z -= 2048;
                                  MagnetData.Text = x.ToString() + "," + y.ToString() + "," + z.ToString();
                                  double rotate = Math.Atan2(z,x);
                                  if(rotate<0)
@@ -218,6 +259,10 @@ namespace WIFIGUIDemo
                                  magnetChart.Series[0].Points.AddY(x);
                                  magnetChart.Series[0].Points.AddY(y);
                                  magnetChart.Series[0].Points.AddY(z);
+                                 if (MagnetPlotOn.Checked)
+                                 {
+                                     VortexChart.Series[0].Points.AddY(x + y + z);
+                                 }
                              }
                              catch (ArgumentOutOfRangeException exception)
                              {
@@ -253,6 +298,21 @@ namespace WIFIGUIDemo
                             }
                         }));
                         break;
+                    case (byte)CommandID.River:
+                        this.BeginInvoke(new EventHandler(delegate
+                            {
+                                int y=NewData.Count;
+                                if(NewData.Count==54)
+                                {
+                                    for (int i = 0; i < 25; i++)
+                                    {
+                                        int s1 = NewData[4 + 2 * i] | (NewData[5 + 2 * i] << 8);
+                                        RiverChart.Series[0].Points.AddXY(riverx, s1);
+                                        riverx++;
+                                    }
+                                }
+                            }));
+                        break;
                     case (byte)CommandID.LineFollowing:
 
                         this.BeginInvoke(new EventHandler(delegate
@@ -270,16 +330,10 @@ namespace WIFIGUIDemo
                                 //okay motor pos is used to plot in terms of distance 
                                 //this isn't properly implemented yet so i just used the 
                                 //only distance variables we have.
-                                if (RiverDataOn.Checked)
+                                if (LinePlotOn.Checked)
                                 {
-                                    RiverChart.Series[0].Points.AddXY(linex, leftSensor);
-                                    RiverChart.Series[1].Points.AddXY(linex, rightSensor);
-                                    linex++;
-                                }
-                                else if (LinePlotOn.Checked)
-                                {
-                                    lineChart.Series[0].Points.AddXY(linex, leftSensor);
-                                    lineChart.Series[1].Points.AddXY(linex, rightSensor);
+                                    lineChart.Series[0].Points.AddXY(LmotorPos, leftSensor);
+                                    lineChart.Series[1].Points.AddXY(LmotorPos, rightSensor);
                                     linex++;
                                 }
                             }
@@ -380,9 +434,7 @@ namespace WIFIGUIDemo
             //If statement to check if the client is connected to a rover
             if (theClient.isConnected)
             {
-                theClient.SendData(CommandID.PhotoDiode, new byte[] { });
                 theClient.SendData(CommandID.SwitchLEDStatus, new byte[] { });
-                theClient.SendData(CommandID.MotorPosStat, new byte[] { });
             }
         }
         #endregion
@@ -433,6 +485,8 @@ namespace WIFIGUIDemo
         private void antiClockwise()
         {
             int barValue = speedbar.Value;
+            if (speedbar.Value < 65)
+                barValue = 60;
             byte LMotion = (byte)(127 * (barValue / 100.0));
             short R = (short)(-127 * (barValue / 100.0));
             byte RMotion = (byte)R;
@@ -441,12 +495,45 @@ namespace WIFIGUIDemo
         private void clockwise()
         {
             int barValue = speedbar.Value;
+            if (speedbar.Value < 65)
+                barValue = 60;
             short L = (short)(-127 * (barValue / 100.0));
             byte LMotion = (byte)L;
             byte RMotion = (byte)(127 * (barValue / 100.0));
             DualMotorCommand(new byte[] { LMotion, RMotion });
         }
-
+        private void grab() 
+        {
+            if (clawGrab < 120)
+            {
+                clawGrab += 5;
+                theClient.SendData(CommandID.Servo1, new byte[] { clawGrab });
+            }
+        }
+        private void release() 
+        {
+            if (clawGrab >30)
+            {
+                clawGrab -= 5;
+                theClient.SendData(CommandID.Servo1, new byte[] { clawGrab });
+            }
+        }
+        private void raise() 
+        {
+            if (clawHeight < 215)
+            {
+                clawHeight += 5;
+                theClient.SendData(CommandID.Servo2, new byte[] { clawHeight });
+            }
+        }
+        private void lower() 
+        {
+            if (clawHeight>145)
+            {
+                clawHeight -= 5;
+                theClient.SendData(CommandID.Servo2, new byte[] { clawHeight });
+            }
+        }
 
         private void Stop_Click(object sender, EventArgs e)
         {
@@ -495,21 +582,38 @@ namespace WIFIGUIDemo
                 clockwise();
             else 
                 stop();
+
+            if (e.KeyChar.Equals(Keys.Up))
+                raise();
+            else if (e.KeyChar.Equals(Keys.Down))
+                lower();
+            if (e.KeyChar.Equals(Keys.Left))
+                release();
+            else if (e.KeyChar.Equals(Keys.Right))
+                grab();
         }
 
         private void ExportData_Click(object sender, EventArgs e)
         {
-            exp = true;
+            //exp = true;
+            for (int i = 0; i < RiverChart.Series[0].Points.Count; i++)
+            {
+                writer.WriteLine(RiverChart.Series[0].Points[i].XValue.ToString() + "," + RiverChart.Series[0].Points[i].YValues.Max().ToString());
+            }
+            writer.Flush();
         }
 
         private void Export()
         {
   
-                writer.Write(txtCounter.Text + "," + LmotorPos.ToString() + "," + RmotorPos.ToString() + ","                  
+               /* writer.Write(txtCounter.Text + "," + LmotorPos.ToString() + "," + RmotorPos.ToString() + ","                  
                     + LmotorVel.ToString() + "," + RmotorVel.ToString() + "," +                    
-                    photodiodeValue.ToString() + "," +  MagnetData.Text+ ","  + AccnData.Text + "\r\n");
-
-                writer.Flush();
+                    photodiodeValue.ToString() + "," +  MagnetData.Text+ ","  + AccnData.Text + "\r\n");*/
+            for (int i = 0; i < RiverChart.Series[0].Points.Count; i++)
+            {
+                writer.WriteLine(RiverChart.Series[0].Points[i].XValue.ToString() + "," + RiverChart.Series[0].Points[i].YValues.Max().ToString());
+            }
+            writer.Flush();
         }
 
         private void Main_KeyUp(object sender, KeyEventArgs e)
@@ -534,7 +638,24 @@ namespace WIFIGUIDemo
         {
             RiverChart.Series[0].Points.Clear();
             RiverChart.Series[1].Points.Clear();
-            linex = 0;
+            riverx = 0;
+        }
+        private void ClearMagnet_Click(object sender, EventArgs e)
+        {
+            VortexChart.Series[0].Points.Clear();
+        }
+        private void RiverClipboard_Click(object sender, EventArgs e)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                RiverChart.SaveImage(ms, System.Drawing.Imaging.ImageFormat.Bmp);
+                
+                Bitmap bmp = new Bitmap(ms);
+                Bitmap dest = new Bitmap(Convert.ToInt32(riverW.Text), Convert.ToInt32(riverH.Text));
+                Graphics g = Graphics.FromImage(dest);
+                g.DrawImage(bmp, 0, 0, Convert.ToInt32(riverW.Text), Convert.ToInt32(riverH.Text));
+                Clipboard.SetImage(dest);
+            }
         }
 
         #endregion 
@@ -553,7 +674,7 @@ namespace WIFIGUIDemo
         {
             double distTravel = 0;
             double distNeedTravel = 0;
-            double MotorConst = 850;
+            double MotorConst = 875;
             double MStartValue = 0;
             distNeedTravel = float.Parse(AccDist.Text.ToString());
             distTravel = distNeedTravel * MotorConst;
@@ -562,8 +683,104 @@ namespace WIFIGUIDemo
             AccDistOn = true;
             AccDistGoal = (int)(MStartValue + distTravel);
         }
+        #region LINE FOLLOWING
 
-        
+        int Lwiggle = 0;
+        int Rwiggle = 0;
+        int number = 400;
+        private void LineFollow()
+        {
+            number = Convert.ToInt32(lineTesting.Text); //Testing line, remove when we've chose a value for number
+            if ((Convert.ToInt16(LFRight.Text) < number) & (Convert.ToInt16(LFLeft.Text) < number))
+            {
+                Lwiggle = 0;
+                Rwiggle = 0;
+                forward();
+            }
+            else if ((Convert.ToInt16(LFLeft.Text) > number) & (Convert.ToInt16(LFRight.Text) < number))
+            {
+                clockwise();
+            }
+            else if ((Convert.ToInt16(LFRight.Text) > number) & (Convert.ToInt16(LFLeft.Text) < number))
+            {
+                antiClockwise();
+            }
+            else
+            {
+                if (Lwiggle < 5)
+                {
+                    antiClockwise();
+                    Lwiggle++;
+                }
+                else if (Rwiggle < 10)
+                {
+                    clockwise();
+                    Rwiggle++;
+                }
+                else
+                {
+                    Lwiggle = 0;
+                    Rwiggle = 0;
+                }
+            }
+        }
+
+        private void ReverseLineFollow()
+        {
+
+            if ((Convert.ToInt16(LFRight.Text) < number) & (Convert.ToInt16(LFLeft.Text) < number))
+            {
+                Lwiggle = 0;
+                Rwiggle = 0;
+                backward();
+            }
+            else if ((Convert.ToInt16(LFLeft.Text) > number) & (Convert.ToInt16(LFRight.Text) < number))
+            {
+                antiClockwise();
+            }
+            else if ((Convert.ToInt16(LFRight.Text) > number) & (Convert.ToInt16(LFLeft.Text) < number))
+            {
+                clockwise();
+            }
+            else
+            {
+                if (Lwiggle < 5)
+                {
+                    antiClockwise();
+                    Lwiggle++;
+                }
+                else if (Rwiggle < 10)
+                {
+                    clockwise();
+                    Rwiggle++;
+                }
+                else
+                {
+                    Lwiggle = 0;
+                    Rwiggle = 0;
+                }
+            }
+        }
+
+        #endregion
+
+       
+        private void RiverDataOn_CheckedChanged(object sender, EventArgs e)
+        {
+            theClient.SendData(CommandID.River, new byte[] { });
+        }
+
+        private void Twitch_Click(object sender, EventArgs e)
+        {
+            byte motion1 = (byte)servoBar1.Value;
+            byte motion2 = (byte)servoBar2.Value;
+            clawValues.Text = servoBar1.Value.ToString() + ":" + servoBar2.Value.ToString();
+            theClient.SendData(CommandID.Servo1, new byte[] { motion1 });
+            theClient.SendData(CommandID.Servo2, new byte[] { motion2 });
+        }
+
+
+
 
 
 
