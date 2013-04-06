@@ -26,6 +26,6 @@ namespace ServerLib
         Accn = 40,              //Accelerometer
         Magnet = 45,            //Magnetometer
         River=46,
-        
+        Control=47
     };
 }

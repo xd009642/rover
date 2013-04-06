@@ -14,6 +14,8 @@ namespace ServerLib
         //Thread that runs the asynchronous client communications
         Thread commThread;
 
+        bool isRunning = false;
+
         public override int Port
         {
             get
@@ -51,8 +53,9 @@ namespace ServerLib
             commThread = new Thread(HandleClientComm);
             //Start thread
             commThread.Start();
+            SendData(CommandID.SetLEDs, new byte[] { 0x3 });
+            isRunning = true;
         }
-
 
         /// <summary>
         /// Send data to the comm device
@@ -128,41 +131,92 @@ namespace ServerLib
             //Infinite loop, should not impact the running on the program as it is running in a separate thread
             while (true)
             {
-                //Reset number of bytes read from server stream
-                bytesRead = 0;
-
-                //Attempt to read data from the server
-                try
+                if (isRunning)
                 {
-                    //blocks until a client sends a message
-                    bytesRead = serverStream.Read(message, 0, (int)theClient.ReceiveBufferSize);
+                    //Reset number of bytes read from server stream
+                    bytesRead = 0;
 
-                    byte[] rcv = new byte[bytesRead];
-
-                    //Copy received data into apropriately sized buffer
-                    for (int cnt = 0; cnt < bytesRead; cnt++)
+                    //Attempt to read data from the server
+                    try
                     {
-                        rcv[cnt] = message[cnt];
+                        //blocks until a client sends a message
+                        bytesRead = serverStream.Read(message, 0, (int)theClient.ReceiveBufferSize);
+
+                        byte[] rcv = new byte[bytesRead];
+
+                        //Copy received data into apropriately sized buffer
+                        for (int cnt = 0; cnt < bytesRead; cnt++)
+                        {
+                            rcv[cnt] = message[cnt];
+                        }
+
+                        //Fire off message received event
+                        ProcessPacket(rcv);
+                    }
+                    catch
+                    {
+                        //a socket error has occured
+                        break;
                     }
 
-                    //Fire off message received event
-                    _ClientMessageReceivedEvent(rcv);
-                }
-                catch
-                {
-                    //a socket error has occured
-                    break;
-                }
-
-                if (bytesRead == 0)
-                {
-                    //the client has disconnected from the server
-                    break;
+                    if (bytesRead == 0)
+                    {
+                        //the client has disconnected from the server
+                        break;
+                    }
                 }
             }
 
             //If this loop ends for any reason close the client
             theClient.Close();
+        }
+
+        private void ProcessPacket(byte[] Packet)
+        {
+            byte _data;
+            Queue<byte> _buffer = new Queue<byte>();
+            bool _waitingForExpectedBytes = false;
+            int _expectedBytes = -2;
+
+            for(int cnt=0;cnt<Packet.Length;cnt++)
+            {
+                _data = Packet[cnt];
+                //start packet framing, leading byte should be 0xff
+                if ((_data == 255) && (!_waitingForExpectedBytes) && (_expectedBytes < 0))
+                {
+                    //If received leading byte then next should be the number of bytes
+                    _waitingForExpectedBytes = true;
+                    //Make sure buffer is clear on receiving new packet
+                    _buffer.Clear();
+                    _buffer.Enqueue(_data);
+                }
+                else
+                    //Second byte present triggered by previous if
+                    if (_waitingForExpectedBytes)
+                    {
+                        //The payload size is equal to the current byte
+                        _expectedBytes = _data;
+                        //We are no longer waiting for the payload size
+                        _waitingForExpectedBytes = false;
+                        _buffer.Enqueue(_data);
+                    }
+                    else
+                    {
+                        //Now that all initial conditions have been satisfied
+                        //fill buffer until expected payload size is reached
+                        _buffer.Enqueue(_data);
+                    }
+            }
+            //When received payload == the expected size end packet and fire received event
+            if (_buffer.Count == _expectedBytes + 2)
+            {
+                //Reset expected bytes state for next packet
+                _expectedBytes = -2;
+
+                //Fire message recieved event
+                _ClientMessageReceivedEvent(_buffer.ToArray());
+                _buffer.Clear();
+            }
         }
 
         /// <summary>
@@ -172,9 +226,8 @@ namespace ServerLib
         {
             //Set isConnected to false and close the client connection
             isConnected = false;
-            commThread.Abort();
             theClient.Close();
+            isRunning = false;
         }
-    
     }
 }

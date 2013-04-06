@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-
+using System.Windows.Forms.DataVisualization.Charting;
 using ServerLib;
 using System.IO;
 
@@ -31,11 +31,14 @@ namespace WIFIGUIDemo
         Timer myTimer;
         StreamWriter writer;
         bool exp = true, AccDistOn = false;
-        int photodiodeValue = 0, LmotorPos=0, LmotorVel=0,
-            RmotorPos=0, RmotorVel=0, AccDistGoal = 0;
-
+        int photodiodeValue = 0, LmotorPos = 0,  PRmotorPos = 0, PLmotorPos = 0,
+            RmotorPos=0, AccDistGoal = 0;
+        short LmotorVel = 0, RmotorVel = 0;
         byte clawGrab = 160;
         byte clawHeight = 70;
+        int refPos1 = 0, refPos2 = 0;
+        double VelDL = 0, VelDR = 0;
+        bool conOn = false;
 
         /// <summary>
         /// Main Form Constructor
@@ -51,12 +54,11 @@ namespace WIFIGUIDemo
             myTimer.Tick+=new EventHandler(MyTimer_Tick);
 
             //initialise claw to position
-            theClient.SendData(CommandID.Servo1, new byte[] { clawGrab });
-            theClient.SendData(CommandID.Servo2, new byte[] { clawHeight });
-        }
-       
             
+        }
 
+        float recorded = 0;
+        int delay = 1;
         private void MyTimer_Tick(object sender, EventArgs e)
         {
             if (ManClockOn.Checked)
@@ -64,51 +66,56 @@ namespace WIFIGUIDemo
             
             if (theClient.isConnected)
             {
+                delay++;
+             //   if(delay%10==0)
+             //       if (conOn)
+                        
                 
-                
-                    theClient.SendData(CommandID.InternalCounter, new byte[] { });
-                    if (MagOn.Checked)
-                        theClient.SendData(CommandID.Magnet);
-                    if (LEDOn.Checked)
-                        theClient.SendData(CommandID.LED, new byte[] {0xFF});
-                    else
-                        theClient.SendData(CommandID.LED, new byte[] { 0x00 });
-                    if (AccelOn.Checked)
-                        theClient.SendData(CommandID.Accn);
-                    if (LineFolOn.Checked)
-                        theClient.SendData(CommandID.LineFollowing);
-                    if (PhotoOn.Checked)
-                        theClient.SendData(CommandID.PhotoDiode, new byte[] { });
-                    if(MotorDataOn.Checked)
-                        theClient.SendData(CommandID.MotorPosStat, new byte[] { });
-                    cmdSwitchLedStatus_Click(null, null);
+                theClient.SendData(CommandID.InternalCounter, new byte[] { });
+                if (recordOn.Checked)
+                {
+                    float _dist = (LmotorPos - PLmotorPos + RmotorPos - PRmotorPos) / 2;
+                    recorded += (_dist / 8.86f);
+                    recDistBox.Text = recorded.ToString();
+                }
+                else recorded = 0;
+                if (ExportOn.Checked)
                     Export();
-                    if ((AccDistGoal < RmotorPos) && (AccDistOn))
-                    {
-                        AccDistOn = false;
-                        stop();
-                    }
-                    int tickCount = 0;
-                    if (LineFollowing.Checked)
-                    {
-                        LineFolOn.Checked = true;
-                        if ((tickCount % 7) == 0)
-                        {
-                            stop();
-                            LineFollow();
-                        }
-                    }
-                    else if (ReverseLineFol.Checked)
-                    {
-                        LineFolOn.Checked = true;
-                        if ((tickCount % 7) == 0)
-                        {
-                            stop();
-                            ReverseLineFollow();
-                        }
-                    }
-                    tickCount++;
-                
+                if (MagOn.Checked)
+                    theClient.SendData(CommandID.Magnet);
+                if (LEDOn.Checked)
+                    theClient.SendData(CommandID.LED, new byte[] {0xFF});
+                else
+                    theClient.SendData(CommandID.LED, new byte[] { 0x00 });
+               if (AccelOn.Checked)
+                    theClient.SendData(CommandID.Accn);
+               if (LineFolOn.Checked)
+                    theClient.SendData(CommandID.LineFollowing);
+               if (PhotoOn.Checked)
+                    theClient.SendData(CommandID.PhotoDiode, new byte[] { });
+               if(MotorDataOn.Checked)
+                    theClient.SendData(CommandID.MotorPosStat, new byte[] { });
+               cmdSwitchLedStatus_Click(null, null);
+               
+              // Control();
+               if ((AccDistGoal < RmotorPos) && (AccDistOn))
+               {
+                    AccDistOn = false;
+                    stop();
+               }
+              // int tickCount = 0;
+               if (LineFollowing.Checked)
+               {
+                   LineFolOn.Checked = true;
+                   //  if ((tickCount % 7) == 0)
+                   //    {
+                   stop();
+                   LineFollow();
+                   //     }
+               }
+               else LFdistance = 0;  
+             //  tickCount++;
+               Export();
             } 
         }
         /// <summary>
@@ -143,6 +150,9 @@ namespace WIFIGUIDemo
                     //Disable appropriate button and enable others
                     cmdConnect.Enabled = false;
                     cmdDisconnect.Enabled = true;
+                    theClient.SendData(CommandID.Servo1, new byte[] { clawGrab });
+                    theClient.SendData(CommandID.Servo2, new byte[] { clawHeight });
+                    theClient.SendData(CommandID.SetLEDs, new byte[] { 0x3 });
                 }
                 catch
                 {
@@ -208,10 +218,19 @@ namespace WIFIGUIDemo
                     case (byte)CommandID.PhotoDiode:
                         this.BeginInvoke(new EventHandler(delegate
                         {
-                            photodiodeValue=(NewData[5] + (NewData[4] << 8)) - 58900;
+                            photodiodeValue=(NewData[5] + (NewData[4] << 8)) - 58000;
                             Photodiode.Text = photodiodeValue.ToString();
-                            if(PhotoPlotOn.Checked)
-                                photoChart.Series[0].Points.AddXY(LmotorPos, photodiodeValue);
+                            if (PhotoPlotOn.Checked && photodiodeValue>0)
+                            {
+                                double scale = (19 / 245) * Math.Pow(LmotorPos - 700, 2)+200;
+                                if (MagOn.Checked)
+                                    photoChart.Series[0].Points.AddY(photodiodeValue);//-scale);
+                                else
+                                {
+                                    int distance = (int)(LmotorPos / 8.86) - 20;
+                                    photoChart.Series[0].Points.AddXY(distance, photodiodeValue);//-scale);
+                                }
+                            }
                             
                         }));
                         break;
@@ -222,14 +241,18 @@ namespace WIFIGUIDemo
                          {
                              try
                              {
-                                 LmotorPos=(NewData[5]|(NewData[6]<<8));
-                                 LmotorVel=NewData[4];
-                                 RmotorPos=(NewData[8]|(NewData[9]<<8));
-                                 RmotorVel=NewData[7];
+                                 PLmotorPos = LmotorPos;
+                                 PRmotorPos = RmotorPos;
+                                 LmotorPos = (NewData[5]|(NewData[6]<<8));
+                                 LmotorVel = NewData[4];
+                                 RmotorPos = (NewData[8]|(NewData[9]<<8));
+                                 RmotorVel = NewData[7];
+                                 if (LmotorVel > 127) { LmotorVel -= 255; }
+                                 if (RmotorVel > 127) { RmotorVel -= 255; }
                                  Motor1Dist.Text = (NewData[5]+(NewData[6]<<8)).ToString();
                                  Motor2Dist.Text = (NewData[8] + (NewData[9] << 8)).ToString();
-                                 LeftSpeed.Text = NewData[4].ToString();
-                                 RightSpeed.Text = NewData[7].ToString();
+                                 LeftSpeed.Text = LmotorVel.ToString();
+                                 RightSpeed.Text = RmotorVel.ToString();
                              }
                             catch (ArgumentOutOfRangeException exception)
                             {
@@ -258,10 +281,10 @@ namespace WIFIGUIDemo
                                  magnetChart.Series[0].Points.Clear();
                                  magnetChart.Series[0].Points.AddY(x);
                                  magnetChart.Series[0].Points.AddY(y);
-                                 magnetChart.Series[0].Points.AddY(z);
+                                //magnetChart.Series[0].Points.AddY(z);
                                  if (MagnetPlotOn.Checked)
                                  {
-                                     VortexChart.Series[0].Points.AddY(x + y + z);
+                                     VortexChart.Series[0].Points.AddY(x);
                                  }
                              }
                              catch (ArgumentOutOfRangeException exception)
@@ -290,6 +313,12 @@ namespace WIFIGUIDemo
                                 accelChart.Series[0].Points.AddY(accX);
                                 accelChart.Series[0].Points.AddY(accY);
                                 accelChart.Series[0].Points.AddY(accZ);
+                                if (on.Checked)
+                                {
+                                    accelchartDist.Series[0].Points.AddY(accX);
+                                    accelchartDist.Series[1].Points.AddY(accY);
+                                    accelchartDist.Series[2].Points.AddY(accZ);
+                                }
                             }
                             catch (ArgumentOutOfRangeException exception)
                             {
@@ -462,21 +491,32 @@ namespace WIFIGUIDemo
         private void stop()
         {
             byte motion = 0x00;
+            conOn = false;
+            VelDL = 0; VelDR = 0;
             DualMotorCommand(new byte[] { motion, motion });
         }
         private void forward()
         {
+            conOn = true;
             int barValue = speedbar.Value;
-            byte LMotion = (byte)(127 * (barValue / 100.0));
-            byte RMotion = (byte)(127 * (barValue / 100.0));
+            byte LMotion = (byte)(int)(/*(0.850f)*/(125.0f * ((float)barValue / 100.0f)));
+            byte RMotion = (byte)(int)((127.0f * ((float)barValue / 100.0f)));
+
+            VelDL = (277 * (barValue / 100.0));
+            VelDR = (277 * (barValue / 100.0));
             DualMotorCommand(new byte[] { LMotion, RMotion });
         }
         
         private void backward()
         {
+            conOn = true;
+            refPos1 = LmotorPos;
+            refPos2 = RmotorPos;
             int barValue = speedbar.Value;
             short L = (short)(-128 * (barValue / 100.0));
-            short R = (short)(-113 * (barValue / 100.0));
+            short R = (short)(-128 * (barValue / 100.0));
+            VelDL = (-277 * (barValue / 100.0));
+            VelDR = (-277 * (barValue / 100.0));
             byte RMotion = (byte)L;
             byte LMotion = (byte)R;
             DualMotorCommand(new byte[] { LMotion, RMotion });
@@ -484,27 +524,31 @@ namespace WIFIGUIDemo
        
         private void antiClockwise()
         {
+            conOn = false;
             int barValue = speedbar.Value;
             if (speedbar.Value < 65)
                 barValue = 60;
             byte LMotion = (byte)(127 * (barValue / 100.0));
             short R = (short)(-127 * (barValue / 100.0));
             byte RMotion = (byte)R;
+            VelDR = R; VelDL = Convert.ToInt16(LMotion);
             DualMotorCommand(new byte[] { LMotion, RMotion });
         }
         private void clockwise()
         {
+            conOn = false;
             int barValue = speedbar.Value;
             if (speedbar.Value < 65)
                 barValue = 60;
             short L = (short)(-127 * (barValue / 100.0));
             byte LMotion = (byte)L;
             byte RMotion = (byte)(127 * (barValue / 100.0));
+            VelDL = L; VelDR = Convert.ToInt16(RMotion);
             DualMotorCommand(new byte[] { LMotion, RMotion });
         }
         private void grab() 
         {
-            if (clawGrab < 120)
+            if (clawGrab < 121)
             {
                 clawGrab += 5;
                 theClient.SendData(CommandID.Servo1, new byte[] { clawGrab });
@@ -520,7 +564,7 @@ namespace WIFIGUIDemo
         }
         private void raise() 
         {
-            if (clawHeight < 215)
+            if (clawHeight < 120)
             {
                 clawHeight += 5;
                 theClient.SendData(CommandID.Servo2, new byte[] { clawHeight });
@@ -528,7 +572,7 @@ namespace WIFIGUIDemo
         }
         private void lower() 
         {
-            if (clawHeight>145)
+            if (clawHeight>5)
             {
                 clawHeight -= 5;
                 theClient.SendData(CommandID.Servo2, new byte[] { clawHeight });
@@ -538,6 +582,7 @@ namespace WIFIGUIDemo
         private void Stop_Click(object sender, EventArgs e)
         {
             stop();
+            LineFollowing.Checked = false;
         }
         private void FowardButton_Click(object sender, EventArgs e)
         {
@@ -573,23 +618,40 @@ namespace WIFIGUIDemo
         private void Main_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar.Equals(Convert.ToChar(119)))
-                forward();
+            {
+                if (chkInvert.Checked)
+                {
+                    backward();
+                }
+                else
+                {
+                    forward();
+                }
+            }
             else if (e.KeyChar.Equals(Convert.ToChar(115)))
-                backward();
+                if (chkInvert.Checked)
+                {
+                    forward();
+                }
+                else
+                {
+                    backward();
+                }
             else if (e.KeyChar.Equals(Convert.ToChar(97)))
                 antiClockwise();
+                
             else if (e.KeyChar.Equals(Convert.ToChar(100)))
                 clockwise();
-            else 
+            else
                 stop();
 
-            if (e.KeyChar.Equals(Keys.Up))
+            if (e.KeyChar.Equals(Convert.ToChar(105)))
                 raise();
-            else if (e.KeyChar.Equals(Keys.Down))
+            else if (e.KeyChar.Equals(Convert.ToChar(107)))
                 lower();
-            if (e.KeyChar.Equals(Keys.Left))
+            if (e.KeyChar.Equals(Convert.ToChar(106)))
                 release();
-            else if (e.KeyChar.Equals(Keys.Right))
+            else if (e.KeyChar.Equals(Convert.ToChar(108)))
                 grab();
         }
 
@@ -606,13 +668,11 @@ namespace WIFIGUIDemo
         private void Export()
         {
   
-               /* writer.Write(txtCounter.Text + "," + LmotorPos.ToString() + "," + RmotorPos.ToString() + ","                  
-                    + LmotorVel.ToString() + "," + RmotorVel.ToString() + "," +                    
-                    photodiodeValue.ToString() + "," +  MagnetData.Text+ ","  + AccnData.Text + "\r\n");*/
-            for (int i = 0; i < RiverChart.Series[0].Points.Count; i++)
+                writer.Write(txtCounter.Text +","  + AccnData.Text + "\r\n");
+            /*for (int i = 0; i < RiverChart.Series[0].Points.Count; i++)
             {
                 writer.WriteLine(RiverChart.Series[0].Points[i].XValue.ToString() + "," + RiverChart.Series[0].Points[i].YValues.Max().ToString());
-            }
+            }*/
             writer.Flush();
         }
 
@@ -627,7 +687,7 @@ namespace WIFIGUIDemo
              photoChart.Series[0].Points.Clear();
              chartx = 0;
         }
-
+        
         private void clearLine_Click(object sender, EventArgs e)
         {
             lineChart.Series[0].Points.Clear();
@@ -674,93 +734,73 @@ namespace WIFIGUIDemo
         {
             double distTravel = 0;
             double distNeedTravel = 0;
-            double MotorConst = 875;
+            double MotorConst = 866;
             double MStartValue = 0;
             distNeedTravel = float.Parse(AccDist.Text.ToString());
             distTravel = distNeedTravel * MotorConst;
             MStartValue = RmotorPos;
             forward();
             AccDistOn = true;
-            AccDistGoal = (int)(MStartValue + distTravel);
+            AccDistGoal = (int)((MStartValue + distTravel)+17.320f);
         }
         #region LINE FOLLOWING
 
-        int Lwiggle = 0;
-        int Rwiggle = 0;
+
         int number = 400;
+        int dangling = 550;
+        char flag;
+        int LFdistance = 0;
         private void LineFollow()
         {
-            number = Convert.ToInt32(lineTesting.Text); //Testing line, remove when we've chose a value for number
+            if (LFdistance == 0)
+            {
+                PLmotorPos = LmotorPos;
+                LFdistance++;
+            }
+            if (LmotorPos > PLmotorPos)
+                LFdistance += LmotorPos - PLmotorPos;
+            PLmotorPos = LmotorPos;
+            number = Convert.ToInt32(lineTesting.Text); //Testing line, remove when we've chosen a value for number
             if ((Convert.ToInt16(LFRight.Text) < number) & (Convert.ToInt16(LFLeft.Text) < number))
             {
-                Lwiggle = 0;
-                Rwiggle = 0;
+                flag=' ';
                 forward();
             }
-            else if ((Convert.ToInt16(LFLeft.Text) > number) & (Convert.ToInt16(LFRight.Text) < number))
+            else if ((Convert.ToInt16(LFRight.Text) > dangling) || (Convert.ToInt16(LFLeft.Text) > dangling))
             {
-                clockwise();
-            }
-            else if ((Convert.ToInt16(LFRight.Text) > number) & (Convert.ToInt16(LFLeft.Text) < number))
-            {
-                antiClockwise();
-            }
-            else
-            {
-                if (Lwiggle < 5)
-                {
-                    antiClockwise();
-                    Lwiggle++;
-                }
-                else if (Rwiggle < 10)
-                {
-                    clockwise();
-                    Rwiggle++;
-                }
-                else
-                {
-                    Lwiggle = 0;
-                    Rwiggle = 0;
-                }
-            }
-        }
-
-        private void ReverseLineFollow()
-        {
-
-            if ((Convert.ToInt16(LFRight.Text) < number) & (Convert.ToInt16(LFLeft.Text) < number))
-            {
-                Lwiggle = 0;
-                Rwiggle = 0;
-                backward();
+                forward();
+                flag = ' ';
             }
             else if ((Convert.ToInt16(LFLeft.Text) > number) & (Convert.ToInt16(LFRight.Text) < number))
             {
-                antiClockwise();
+                flag = 'L';
+                forward();
             }
             else if ((Convert.ToInt16(LFRight.Text) > number) & (Convert.ToInt16(LFLeft.Text) < number))
             {
-                clockwise();
+                flag = 'R';
+                forward();
             }
             else
             {
-                if (Lwiggle < 5)
+                if (flag == 'R')
                 {
                     antiClockwise();
-                    Lwiggle++;
                 }
-                else if (Rwiggle < 10)
+                else if (flag == 'L')
                 {
                     clockwise();
-                    Rwiggle++;
                 }
-                else
+                else if (flag == ' ' )
                 {
-                    Lwiggle = 0;
-                    Rwiggle = 0;
+                    stop();
                 }
+                
             }
+            
         }
+
+        
 
         #endregion
 
@@ -779,31 +819,94 @@ namespace WIFIGUIDemo
             theClient.SendData(CommandID.Servo2, new byte[] { motion2 });
         }
 
+       private void Control()
+        {
+            
+            if (VelDL!=0 & VelDR!=0)//PLmotorPos!=LmotorPos)
+            {
+                double Lactual = 0, Ractual = 0;
+                Lactual = ((double)(LmotorPos - PLmotorPos) / ((double)myTimer.Interval * 0.001));
+                Ractual = ((double)(RmotorPos - PRmotorPos) / ((double)myTimer.Interval * 0.001));
+                double leftError = VelDL - Lactual;
+                double rightError = VelDR - Ractual;
+               
+                int newSpeed1 = LmotorVel;
+                int newSpeed2 = RmotorVel;
+                
+                
+                if (VelDR > Ractual & newSpeed1<127)
+                    newSpeed1++;
+                else if (VelDR < Ractual & newSpeed1 > -127)
+                    newSpeed1--;
 
+                if (VelDL > Lactual & newSpeed2< 127)
+                    newSpeed2++;
+                else if (VelDL < Lactual & newSpeed2> -127)
+                    newSpeed2--;
 
+                DualMotorCommand(new byte[] { (byte)newSpeed1, (byte)newSpeed2 });
 
+             
+            }
+        }
 
+        private void ControlData_CheckedChanged(object sender, EventArgs e)
+        {
+            if (ExportOn.Checked) {
+                theClient.SendData(CommandID.Control, new byte[] { });
+            }
+        }
 
+        private void accelchartDist_Click(object sender, EventArgs e)
+        {
+            accelchartDist.Series[0].Points.Clear();
+            accelchartDist.Series[1].Points.Clear();
+            accelchartDist.Series[2].Points.Clear();
+        }
+        int einstein_A_Go_Go = 0;
+        private void einstein_Click(object sender, EventArgs e)
+        {
+            emcSquared.Text = (++einstein_A_Go_Go).ToString();
+        }
 
+       
+        private void speedbar_ValueChanged(object sender, EventArgs e)
+        {
+            speedBox.Text = speedbar.Value.ToString();
+        }
 
+        private void setSpeed_Click(object sender, EventArgs e)
+        {
+            if (Convert.ToInt32(speedBox.Text) > 20 && Convert.ToInt32(speedBox.Text)<101)
+                speedbar.Value = Convert.ToInt32(speedBox.Text);
+        }
 
+        private void photoChart_Click(object sender, EventArgs e)
+        {
+            double xMin=photoChart.Series[0].Points.ElementAt(0).XValue;
+            for (int i = 0; i < photoChart.Series[0].Points.Count; i++)
+            {
+                photoChart.Series[0].Points.ElementAt(i).XValue -= xMin;
+            }
+            photoChart.Series[1].Points.AddXY(0, 0);
+        }
 
+        private void lightClip_Click(object sender, EventArgs e)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                photoChart.SaveImage(ms, System.Drawing.Imaging.ImageFormat.Bmp);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                Bitmap bmp = new Bitmap(ms);
+               // Bitmap dest = new Bitmap(Convert.ToInt32(px.Text), Convert.ToInt32(py.Text));
+                Bitmap dest = new Bitmap(640, 480);
+                Graphics g = Graphics.FromImage(dest);
+               // g.DrawImage(bmp, 0, 0, Convert.ToInt32(px.Text), Convert.ToInt32(py.Text));
+                g.DrawImage(bmp, 0, 0, Convert.ToInt32(640), Convert.ToInt32(480));
+                Clipboard.SetImage(dest);
+            }
+        }
 
     }
-}
+       
+ }
